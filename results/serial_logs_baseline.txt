@@ -1,0 +1,63 @@
+================================================================
+FC MAC Accelerator - Zybo Z7-10 - Baseline Serial Logs
+================================================================
+Board   : Zybo Z7-10 (XC7Z010)
+PL clock: 100 MHz (10 ns)
+Serial  : COM3 @ 115200 8N1
+App     : bare-metal benchmark app, Cortex-A9
+Menu    : 1=RAND_DATA_GEN  2=SW RUN  3=HW RUN  4=CHECK
+Note    : "clock cycles" line is an approximation (global-timer tick based).
+          Use the "us" values for reporting.
+Raw     : unedited PuTTY captures in putty_baseline_O0.log /
+          putty_baseline_O2.log (this file is the annotated digest).
+================================================================
+
+
+----------------------------------------------------------------
+RUN A - SW optimization = -O0  (menu: 1 -> 2 -> 3 -> 4)
+----------------------------------------------------------------
+[SW RUN]
+  SW Done
+  Output took 1314.29 us.          <-- SW compute (-O0)
+
+[HW RUN]
+  BRAM 0 Write Done ......  962.07 us   (AXI4-Lite PIO load)
+  BRAM 1 Write Done ......  962.88 us   (AXI4-Lite PIO load)
+  Calculation Core Done ..   41.61 us   <-- HW compute
+  result read Done .......    0.86 us
+  Total HW Run time ......  1967.43 us
+
+[CHECK]
+  Success. Match Result            <-- SW == HW (bit-exact)
+
+  => pure compute speedup (SW/HW) = 1314.29 / 41.6  ~= 31.6x
+
+
+----------------------------------------------------------------
+RUN B - SW optimization = -O2  (menu: 1 -> 2 -> 3 -> 4)
+----------------------------------------------------------------
+[SW RUN]
+  SW Done
+  Output took 508.41 us.           <-- SW compute (-O2), ~2.6x faster than -O0
+
+[HW RUN]
+  BRAM 0 Write Done ......  832.98 us   (loading loop also benefits from -O2)
+  BRAM 1 Write Done ......  834.29 us
+  Calculation Core Done ..   41.54 us   <-- HW compute (unchanged, PL logic)
+  result read Done .......    0.70 us
+  Total HW Run time ......  1709.51 us
+
+[CHECK]
+  Success. Match Result            <-- SW == HW (bit-exact)
+
+  => pure compute speedup (SW/HW) = 508.41 / 41.54 ~= 12.2x
+  => loading share of total = 1667.27 / 1709.51 = 97.5%
+
+
+----------------------------------------------------------------
+Key takeaways
+----------------------------------------------------------------
+- HW compute is ~12.2x faster than optimized (-O2) SW.
+- BUT AXI4-Lite PIO loading = 97.5% of end-to-end time -> data movement is the bottleneck.
+- HW compute time is independent of SW optimization level (PS/PL separation confirmed).
+- All results bit-exact vs SW golden reference.

@@ -1,6 +1,11 @@
 MIT License
 
-Copyright (c) 2026 dhjsh88
+Copyright (c) 2026 Minjun Jang
+
+This license applies ONLY to the files authored by me in this repository
+(rtl/axis_to_bram.v, sw/dma_extension.c, and all documentation under docs/
+and results/). It does NOT cover the course-provided baseline design, which
+is not redistributed here (see README "Attribution and Scope").
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

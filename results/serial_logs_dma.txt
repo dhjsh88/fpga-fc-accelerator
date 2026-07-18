@@ -1,0 +1,65 @@
+================================================================
+DMA path serial logs
+================================================================
+Board   : Zybo Z7-10 (XC7Z010), PL @ 100 MHz
+SW      : Cortex-A9 bare-metal, -O2
+Serial  : COM3 @ 115200 8N1
+Raw     : unedited PuTTY capture of Session 2 in putty_dma_ab.log
+          (2026.07.06). Session 1 below is transcribed from the live
+          bring-up terminal; its raw capture was not retained.
+================================================================
+
+------- Session 1: bring-up after the 23-bit length fix --------
+(diagnostic printf still inside the timed region -> times inflated;
+ kept as evidence of the SR chronology in docs/debugging_story.md)
+
+==================
+DMA: enter, SR=0x00000001
+DMA: kicked, SR=0x00000000
+DMA: done, SR=0x00001002
+BRAM 0 DMA Write Done
+Output took 1397.36 us.
+DMA: enter, SR=0x00001002
+DMA: kicked, SR=0x00001000
+DMA: done, SR=0x00001002
+BRAM 1 DMA Write Done
+Output took 7037.72 us.
+Calculation Core Done
+Output took 41.74 us.
+result read Done
+Output took 0.98 us.
+Total HW(DMA) Run time 8477.80 us.
+==================
+
+(Load times here are dominated by UART printf inside the timed region,
+not by the DMA. See "instrumentation cost" in docs/debugging_story.md.)
+
+------- Session 2: final A/B - PIO vs DMA on one bitstream ------
+(diagnostic printf removed; -O2; order 1 -> 2 -> 3 -> 5 -> 4;
+ full unedited capture: putty_dma_ab.log)
+
+[SW RUN]
+  SW Done
+  Output took 519.26 us.
+
+[HW RUN - PIO path]
+  BRAM 0 Write Done ......  923.22 us
+  BRAM 1 Write Done ......  922.83 us
+  Calculation Core Done ..   41.67 us
+  result read Done .......    0.83 us
+  Total HW Run time ......  1888.54 us
+
+[HW RUN - DMA path]
+  BRAM 0 DMA Write Done ..   42.43 us
+  BRAM 1 DMA Write Done ..   42.42 us
+  Calculation Core Done ..   41.69 us
+  result read Done .......    0.83 us
+  Total HW(DMA) Run time .  127.37 us
+
+[CHECK]
+  Success. Match Result          <-- no mismatch lines: bit-exact
+
+  => loading: 1846.05 us -> 84.85 us  = 21.8x
+  => end-to-end: 1888.54 -> 127.37 us = 14.8x
+  => vs SW (-O2, 519.26): 3.6x slower -> 4.1x faster
+  => DMA load vs theory: 42.43 us vs 40.96 us (4096 words x 10 ns)

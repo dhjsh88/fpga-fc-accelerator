@@ -1,0 +1,50 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2026.07.01 15:49:15 =~=~=~=~=~=~=~=~=~=~=~=
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+plz input srand value.
+Success. Input gen 
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+SW Done
+Output took 875320 clock cycles.
+Output took 1314.29 us.
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+BRAM 0 Write Done
+Output took 640740 clock cycles.
+Output took 962.07 us.
+BRAM 1 Write Done
+Output took 641280 clock cycles.
+Output took 962.88 us.
+Calculation Core Done
+Output took 27714 clock cycles.
+Output took 41.61 us.
+result read Done
+Output took 574 clock cycles.
+Output took 0.86 us.
+Total HW Run time 1967.43 us.
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+Success. Match Result
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result

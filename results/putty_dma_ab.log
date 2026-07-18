@@ -1,0 +1,71 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2026.07.06 18:07:34 =~=~=~=~=~=~=~=~=~=~=~=
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
+plz input srand value.
+Success. Input gen 
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
+SW Done
+Output took 345824 clock cycles.
+Output took 519.26 us.
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
+BRAM 0 Write Done
+Output took 614864 clock cycles.
+Output took 923.22 us.
+BRAM 1 Write Done
+Output took 614602 clock cycles.
+Output took 922.83 us.
+Calculation Core Done
+Output took 27750 clock cycles.
+Output took 41.67 us.
+result read Done
+Output took 554 clock cycles.
+Output took 0.83 us.
+Total HW Run time 1888.54 us.
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
+BRAM 0 DMA Write Done
+Output took 42.43 us.
+BRAM 1 DMA Write Done
+Output took 42.42 us.
+Calculation Core Done
+Output took 41.69 us.
+result read Done
+Output took 0.83 us.
+Total HW(DMA) Run time 127.37 us.
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
+Success. Match Result
+==================
+plz input run mode
+1. RAND_DATA_GEN 
+2. SW RUN 
+3. HW RUN 
+4. CHECK SW vs HW result
+5. HW RUN (DMA) 
