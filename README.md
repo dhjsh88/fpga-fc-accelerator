@@ -105,7 +105,7 @@ Full trace and reasoning: `docs/debugging_story.md`.
   multiplies to DSP48 (currently 0/80 used) — not yet applied. A later rebuild
   passed marginally (WNS +0.020 ns) with the MAC path unchanged; attributed to
   place-and-route variance at a borderline constraint, not claimed as an
-  improvement. Separately, the same netlist closes timing under the
+  improvement. Separately, the baseline netlist closes timing under the
   `Performance_ExploreWithRemap` strategy (WNS +0.020 ns, zero margin) —
   deliberate tool-level closure; the architectural fix remains unapplied. See
   `results/timing_baseline.md`.
