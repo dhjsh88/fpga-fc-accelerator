@@ -79,18 +79,11 @@ answer.
 
 ## 4.5 Tool-level closure (deliberate, reproducible)
 
-Re-implementing the *same synthesized netlist* with the
-`Performance_ExploreWithRemap` implementation strategy (synthesis untouched,
-Vivado Synthesis Defaults) closes timing: WNS +0.020 ns, TNS 0, zero failing
-endpoints (`timing_summary_explore.rpt`, `timing_paths_explore.rpt`).
+Re-implementing the baseline rebuild of section 1 — the same synthesized netlist that fails above — with the Performance_ExploreWithRemap implementation strategy (synthesis untouched, Vivado Synthesis Defaults) closes timing: WNS +0.020 ns, TNS 0, zero failing endpoints (timing_summary_explore.rpt, timing_paths_explore.rpt).
 
 ![Same netlist, ExploreWithRemap strategy: WNS +0.020](../docs/images/timing_explore_runs.png)
 
-Unlike the marginal pass in section 4, this is intentional and repeatable. But
-the path report shows what it is not: logic levels are unchanged (13–14) and
-logic delay still consumes 6.2 ns of the 10 ns budget — the gain came from
-placement and routing, not from the datapath. A strategy meets timing; only
-the architectural fix in section 3 would create margin.
+Unlike the marginal pass in section 4, this is intentional and repeatable. But the path report shows what it is not: logic levels are unchanged (13–14) and logic delay still consumes 6.2 ns of the 10 ns budget — the gain came from placement and routing, not from the datapath. A strategy meets timing; only the architectural fix in section 3 would create margin. That the two runs in sections 4 and 4.5 land at nearly identical slack (+0.020 ns) is tool behavior, not a shared cause: the router stops optimizing once timing is met, so borderline designs cluster just above zero.
 
 ## 5. Practical note
 
