@@ -55,6 +55,12 @@ through the MAC. Loading-time improvements and this violation are independent.
 Applying and verifying this fix on the board (the +1-cycle latency must not
 desynchronize the data mover's valid/done accounting) is the next step.
 
+The course materials themselves include a revised core (`timing_rev.v`) that
+applies exactly this fix — independent confirmation that the violation is real
+and that pipelining is the accepted answer. I have deliberately not integrated
+that revision: applying a fix I did not design would blur the authorship
+boundary this repository documents.
+
 ## 4. Note: a marginal pass that was not claimed
 
 An unrelated rebuild (IP repackaging; MAC path unchanged, verified against
@@ -70,6 +76,21 @@ timing summary is reproducible from the current project:
 +0.020 ns of slack on a 10 ns clock is 0.2% margin — a coin flip of the
 placer, not closure. The architectural fix in section 3 remains the real
 answer.
+
+## 4.5 Tool-level closure (deliberate, reproducible)
+
+Re-implementing the *same synthesized netlist* with the
+`Performance_ExploreWithRemap` implementation strategy (synthesis untouched,
+Vivado Synthesis Defaults) closes timing: WNS +0.020 ns, TNS 0, zero failing
+endpoints (`timing_summary_explore.rpt`, `timing_paths_explore.rpt`).
+
+![Same netlist, ExploreWithRemap strategy: WNS +0.020](../docs/images/timing_explore_runs.png)
+
+Unlike the marginal pass in section 4, this is intentional and repeatable. But
+the path report shows what it is not: logic levels are unchanged (13–14) and
+logic delay still consumes 6.2 ns of the 10 ns budget — the gain came from
+placement and routing, not from the datapath. A strategy meets timing; only
+the architectural fix in section 3 would create margin.
 
 ## 5. Practical note
 
