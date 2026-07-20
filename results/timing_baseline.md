@@ -24,7 +24,7 @@ and reproduced exactly — WNS −0.905 ns, TNS −20.753 ns, 51 failing endpoin
 | WHS / THS | +0.051 ns / 0.000 ns (hold clean) |
 | DSP48 usage | 0 / 80 (multiplies in LUT + CARRY4, 13 logic levels) |
 
-## 2. Diagnosis (my analysis)
+## 2. Diagnosis
 
 Worst path: BRAM data output → 8-bit multiply → 32-bit accumulate →
 `r_result` register — the entire chain in one clock cycle (~10.6 ns against
