@@ -52,14 +52,9 @@ through the MAC. Loading-time improvements and this violation are independent.
   (latency +1 cycle; throughput unchanged at 1 MAC/cycle).
 - Map the multiplies onto DSP48 slices for additional margin.
 
-Applying and verifying this fix on the board (the +1-cycle latency must not
-desynchronize the data mover's valid/done accounting) is the next step.
+Applying and validating this fix on the board (the +1-cycle latency must not
+desynchronize the data mover's valid/done accounting) remains future work.
 
-The course materials themselves include a revised core (`timing_rev.v`) that
-applies exactly this fix — independent confirmation that the violation is real
-and that pipelining is the accepted answer. I have deliberately not integrated
-that revision: applying a fix I did not design would blur the authorship
-boundary this repository documents.
 
 ## 4. Note: a marginal pass that was not claimed
 
