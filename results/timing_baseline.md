@@ -73,17 +73,25 @@ timing summary is reproducible from the current project:
 
 ![Current implementation: WNS +0.020 ns, 0 failing endpoints](../docs/images/timing_marginal_pass.png)
 
-+0.020 ns of slack on a 10 ns clock is 0.2% margin — a coin flip of the
-placer, not closure. The architectural fix in section 3 remains the real
-answer.
++0.020 ns of slack on a 10 ns clock is 0.2% margin and reflects
+place-and-route variability at a borderline constraint — not closure. The
+architectural fix in section 3 remains the real answer.
 
 ## 4.5 Tool-level closure (deliberate, reproducible)
 
-Re-implementing the baseline rebuild of section 1 — the same synthesized netlist that fails above — with the Performance_ExploreWithRemap implementation strategy (synthesis untouched, Vivado Synthesis Defaults) closes timing: WNS +0.020 ns, TNS 0, zero failing endpoints (timing_summary_explore.rpt, timing_paths_explore.rpt).
+Re-implementing the baseline netlist of section 1 with the
+`Performance_ExploreWithRemap` implementation strategy (synthesis untouched)
+closes timing: WNS +0.020 ns, zero failing endpoints
+(`timing_summary_explore.rpt`, `timing_paths_explore.rpt`).
 
 ![Same netlist, ExploreWithRemap strategy: WNS +0.020](../docs/images/timing_explore_runs.png)
 
-Unlike the marginal pass in section 4, this is intentional and repeatable. But the path report shows what it is not: logic levels are unchanged (13–14) and logic delay still consumes 6.2 ns of the 10 ns budget — the gain came from placement and routing, not from the datapath. A strategy meets timing; only the architectural fix in section 3 would create margin. That the two runs in sections 4 and 4.5 land at nearly identical slack (+0.020 ns) is tool behavior, not a shared cause: the router stops optimizing once timing is met, so borderline designs cluster just above zero.
+Unlike section 4, this is intentional and repeatable — but the path report
+shows the datapath is unchanged (13–14 logic levels; logic delay still 6.2 ns
+of the 10 ns budget), so the gain came from placement and routing. Both runs
+landing just above zero slack is expected tool behavior — the router stops
+optimizing once timing is met — not evidence of a shared cause. A strategy
+meets timing; only the pipeline fix in section 3 would create margin.
 
 ## 5. Practical note
 
