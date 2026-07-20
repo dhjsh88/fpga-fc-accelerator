@@ -110,7 +110,7 @@ Full trace and reasoning: `docs/debugging_story.md`.
 
 ## Key Project Artifacts
 
-| Claim | Evidence |
+| Highlights | Location |
 |---|---|
 | 21.8× loading / 4.1× end-to-end / bit-exact | `results/putty_dma_ab.log` (unedited capture) |
 | 97.5% loading share | `results/putty_baseline_O0.log`, `_O2.log` |
