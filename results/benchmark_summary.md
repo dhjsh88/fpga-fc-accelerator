@@ -47,14 +47,15 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
 - Diagnostic printf inside the timed region inflates results by ~30-160x at
   115,200 baud; removed for all reported numbers (see
   `docs/debugging_story.md`).
-- Two PIO datasets exist, both from the board. The original baseline
-  bitstream (pre-DMA) measured 832.98/834.29 us loads at -O2
+- Two PIO datasets are included. The original baseline bitstream (pre-DMA)
+  measured 832.98/834.29 us loading times at -O2
   (`serial_logs_baseline.txt`; raw captures `putty_baseline_O0.log`,
-  `putty_baseline_O2.log`). The headline table above instead uses the
-  same-bitstream A/B session on the DMA-enabled build (923.22/922.83 us,
-  `serial_logs_dma.txt`, raw capture `putty_dma_ab.log`) so PIO and DMA are compared under identical
-  hardware. The ~90 us difference between builds does not change any
-  conclusion; if anything the headline is the conservative comparison.
+  `putty_baseline_O2.log`). The headline table uses the same-bitstream A/B
+  session on the DMA-enabled build (923.22/922.83 us,
+  `serial_logs_dma.txt`; raw capture `putty_dma_ab.log`), allowing the PIO and
+  DMA paths to be compared under identical hardware. The difference between the
+  two PIO measurements reflects different builds and does not affect the
+  conclusions.
 - The -O0 row in section 2 (1314.29 us) is from the baseline-bitstream
   session; HW compute is 41.5-41.7 us in every session, confirming PS/PL
   separation.
