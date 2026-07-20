@@ -60,7 +60,7 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
   session; HW compute is 41.5-41.7 us in every session, confirming PS/PL
   separation.
 
-## 5. Power (auxiliary, vectorless estimate)
+## 5. Appendix: Power Estimate (Vectorless)
 
 Vivado post-implementation estimate on the DMA-enabled build: 1.56 W total,
 of which the PS7 (ARM subsystem) accounts for 1.404 W (96%). The entire PL
