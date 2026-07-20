@@ -57,11 +57,11 @@ Raw serial logs from the board are in `results/`.
 
 ## What Changed
 
-```
+````
 Before (PIO):   DDR ──CPU, 8,192 single AXI-Lite writes──▶ BRAM ──▶ 4x MAC cores
 After  (DMA):   DDR ──AXI DMA burst via Zynq HP0──▶ AXI-Stream ──▶ axis_to_bram ──▶ BRAM ──▶ 4x MAC cores
                        (CPU issues one descriptor per array; cache flushed before transfer)
-```
+````
 
 The implemented block design — control on GP0 (left interconnect), bulk data
 from DDR through `S_AXI_HP0` (right interconnect), and the DMA's `M_AXIS_MM2S`
@@ -99,35 +99,23 @@ Full trace and reasoning: `docs/debugging_story.md`.
 
 ## Known Limitations / Next Steps
 
-- Baseline timing closure is incomplete at 100 MHz (WNS −0.905 ns on the
-  single-cycle multiply-accumulate path; 51 failing endpoints, all core accumulator
-  registers). Fix identified — pipeline the MAC (multiply-stage register), map
-  multiplies to DSP48 (currently 0/80 used) — not yet applied. A later rebuild
-  passed marginally (WNS +0.020 ns) with the MAC path unchanged; attributed to
-  place-and-route variance at a borderline constraint, not claimed as an
-  improvement. Separately, the baseline netlist closes timing under the
-  `Performance_ExploreWithRemap` strategy (WNS +0.020 ns, zero margin) —
-  deliberate tool-level closure; the architectural fix remains unapplied. See
+- The baseline compute core does not robustly close timing at 100 MHz: the
+  single-cycle multiply–accumulate path is the bottleneck (WNS −0.905 ns). An
+  implementation-strategy change closes it with zero margin, and the real fix —
+  pipelining the MAC — is identified but deliberately not applied; a lucky
+  marginal pass along the way is documented rather than claimed. Full analysis:
   `results/timing_baseline.md`.
 - Streaming directly to the cores (removing the BRAM staging entirely) is the
   natural next step; the DMA/cache/benchmark infrastructure built here carries over.
 
-## Repository Map
-
-Every number claimed above traces to a raw artifact in this repository:
+## Key Project Artifacts
 
 | Claim | Evidence |
 |---|---|
-| 21.8x loading / 4.1x end-to-end / bit-exact | `results/putty_dma_ab.log` — unedited PuTTY capture of the A/B session |
-| Baseline profile (97.5% loading share) | `results/putty_baseline_O0.log`, `putty_baseline_O2.log` |
-| Timing diagnosis (WNS −0.905, DSP 0/80) | `results/timing_summary_baseline.rpt`, `utilization_baseline.rpt` — full Vivado reports |
-| Silent-DMA-failure root cause | `docs/debugging_story.md` — actual status-register trace |
-| What is mine vs. course-provided | `docs/MODIFICATIONS.md` — exact per-file change record |
-| My RTL / my driver code | `rtl/axis_to_bram.v`, `sw/dma_extension.c` |
-| System design rationale | `docs/architecture.md` |
-
-Annotated digests (`results/serial_logs_*.txt`, `benchmark_summary.md`) sit
-alongside the raw captures for faster reading.
+| 21.8× loading / 4.1× end-to-end / bit-exact | `results/putty_dma_ab.log` (unedited capture) |
+| 97.5% loading share | `results/putty_baseline_O0.log`, `_O2.log` |
+| Timing analysis | `results/timing_baseline.md` + full Vivado reports |
+| What is mine vs. course-provided | `docs/MODIFICATIONS.md` |
 
 ## Environment
 
@@ -138,3 +126,6 @@ SW optimization level recorded per measurement (`-O0` and `-O2` both reported in
 Implemented design on the XC7Z010 fabric (accelerator + DMA in cyan):
 
 ![Implemented device](docs/images/implemented_device.png)
+
+
+커밋되면 repo는 이걸로 최종 동결이고, 바로 구글 메시지 발송 → 김현덕·사수 메일 순서야. 완료 알려줘.
