@@ -126,6 +126,3 @@ SW optimization level recorded per measurement (`-O0` and `-O2` both reported in
 Implemented design on the XC7Z010 fabric (accelerator + DMA in cyan):
 
 ![Implemented device](docs/images/implemented_device.png)
-
-
-커밋되면 repo는 이걸로 최종 동결이고, 바로 구글 메시지 발송 → 김현덕·사수 메일 순서야. 완료 알려줘.
