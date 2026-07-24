@@ -46,12 +46,13 @@ register-file submodule. No logic.
 
 ## 3. AXI4-Lite register file (`myip_v1_0_S00_AXI.v`) — control register
 
-Used a previously unused register slot (`slv_reg10`, byte offset 0x28; the
-course design decodes 16 slots and used 10). Added:
+Used a previously unused register slot: the register file decodes slots 0x0
+through 0xF, and slot 0xA (decimal 10, byte offset 0x28) was free. The
+generated register signal is named `slv_rega`. Added:
 
 ```verilog
-assign o_dma_mode   = slv_reg10[0];  // 0 = PIO (original path), 1 = DMA
-assign o_dma_target = slv_reg10[1];  // 0 = BRAM0 (node), 1 = BRAM1 (weight)
+assign o_dma_mode   = slv_rega[0];  // 0 = PIO (original path), 1 = DMA
+assign o_dma_target = slv_rega[1];  // 0 = BRAM0 (node), 1 = BRAM1 (weight)
 ```
 
 Readback of the slot was already present in the course read mux, so the CPU
@@ -64,7 +65,8 @@ can verify the mode it set.
 - New menu case `HW_RUN_DMA` mirroring the course's `HW_RUN` stage timing.
 - `dma_mm2s_transfer()` with completion polling and timeout.
 
-Full added code: `sw/dma_extension.c`.
+Published helper code and documented integration flow: `sw/dma_extension.c`.
+The course application's full `main.c` is not redistributed.
 
 ## 5. Block design (Vivado, not a text file)
 
