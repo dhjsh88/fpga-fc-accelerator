@@ -7,7 +7,8 @@ has been identified but **not yet applied**.
 
 Source: `report_timing_summary` / `report_timing` on the implemented design.
 Raw reports in this folder: `timing_summary_baseline.rpt` (full summary with
-the 10 worst paths), `utilization_baseline.rpt`.
+the 10 worst paths), `timing_all_violations.rpt` (every violating path),
+`utilization_baseline.rpt`.
 
 **Reproducibility**: the violation was re-derived in an independent rebuild of
 the baseline IP in a fresh project (July 2026, same sources, Vivado 2022.2)
@@ -20,20 +21,22 @@ and reproduced exactly — WNS −0.905 ns, TNS −20.753 ns, 51 failing endpoin
 | Target clock | 100 MHz (10 ns, clk_fpga_0) |
 | WNS | **−0.905 ns** (setup, failing) |
 | TNS | −20.753 ns |
-| Failing endpoints | 51 (summary count) — the ten worst reported paths all terminate at core accumulate registers (`r_result_reg`) |
+| Failing endpoints | 51 — all four cores' accumulate registers (`r_result_reg`), confirmed in `timing_all_violations.rpt` |
 | WHS / THS | +0.051 ns / 0.000 ns (hold clean) |
 | DSP48 usage | 0 / 80 (multiplies in LUT + CARRY4, 13 logic levels) |
 
-## 2. Diagnosis
+## 2. Diagnosis (my analysis)
 
 Worst path: BRAM data output → 8-bit multiply → 32-bit accumulate →
 `r_result` register — the entire chain in one clock cycle (~10.6 ns against
-~9.7 ns available). Every path in the worst-ten report shares this single root cause — the summary
-counts 51 failing endpoints in total, and a full violation listing
-(`report_timing -setup -slack_lesser_than 0`) is queued to confirm the
-remainder. This is not scattered congestion but one architectural decision
-(single-cycle MAC) exceeding the clock budget, aggravated by the multiplies being inferred
-into LUT/carry logic instead of the device's DSP48 slices (0 of 80 used).
+~9.7 ns available). Every one of the 51 failing paths shares this single root
+cause: the full violation listing (`timing_all_violations.rpt`,
+`report_timing -setup -slack_lesser_than 0`) shows all 51 starting at a BRAM
+read port and terminating at an accumulate register (`r_result_reg`) across
+the four core instances. This is not scattered congestion but one
+architectural decision (single-cycle MAC) exceeding the clock budget,
+aggravated by the multiplies being inferred into LUT/carry logic instead of
+the device's DSP48 slices (0 of 80 used).
 
 Worst path from `timing_summary_baseline.rpt`: `u_bram0/ram_reg_3` (RAMB36E1
 read, 2.454 ns clock-to-out) → multiply/accumulate carry network → core 0
@@ -54,9 +57,14 @@ through the MAC. Loading-time improvements and this violation are independent.
   (latency +1 cycle; throughput unchanged at 1 MAC/cycle).
 - Map the multiplies onto DSP48 slices for additional margin.
 
-Applying and validating this fix on the board (the +1-cycle latency must not
-desynchronize the data mover's valid/done accounting) remains future work.
+Applying and verifying this fix on the board (the +1-cycle latency must not
+desynchronize the data mover's valid/done accounting) is the next step.
 
+The course materials themselves include a revised core (`timing_rev.v`) that
+applies exactly this fix — independent confirmation that the violation is real
+and that pipelining is the accepted answer. I have deliberately not integrated
+that revision: applying a fix I did not design would blur the authorship
+boundary this repository documents.
 
 ## 4. Note: a marginal pass that was not claimed
 
