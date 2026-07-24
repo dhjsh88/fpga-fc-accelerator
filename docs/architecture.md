@@ -25,9 +25,9 @@ same PIO path measures 1,846 µs — see the measurement notes in
 
 ```
                  AXI4-Lite (GP0): control only
-  Cortex-A9  ──────────────────────────▶  Register file ──┐ slv_reg10: mode/target
+  Cortex-A9  ──────────────────────────▶  Register file ──┐ reg slot 10: mode/target
       │                                                    ▼
-      │ one descriptor per array              ┌──────── mux (PIO / DMA) ──▶ BRAM0/1 (port 1)
+      │ one MM2S transfer per array              ┌──────── mux (PIO / DMA) ──▶ BRAM0/1 (port 1)
       ▼                                       │
   AXI DMA (MM2S) ──▶ AXI-Stream ──▶ axis_to_bram
       ▲
@@ -40,7 +40,7 @@ same PIO path measures 1,846 µs — see the measurement notes in
 - `axis_to_bram` (my RTL) converts the address-less stream into sequential
   BRAM writes: count accepted beats, reset on `TLAST`. `tready` is held high
   because the BRAM sinks one word per clock — no backpressure needed.
-- The original PIO path is retained behind a runtime mux (`slv_reg10[0]`),
+- The original PIO path is retained behind a runtime mux (register slot 10, bit 0),
   which enabled same-bitstream A/B benchmarking and served as a known-good
   regression path during DMA bring-up.
 - The DMA path touches only the BRAM *write* port (port 1); the compute-side
@@ -57,15 +57,16 @@ the DMA redesign touches only data movement, which is the point.
 ## Verification
 
 The course application's golden model (same computation on the A9) and CHECK
-comparison are reused unchanged. Every configuration measured in `results/`
-passes bit-exact comparison across all four accumulators.
+comparison are reused unchanged. All reported hardware runs in `results/`
+pass bit-exact comparison across all four accumulators.
 
 ## Timing status (known limitation)
 
-Baseline implementation misses 100 MHz timing: WNS −0.905 ns, 51 failing
-endpoints, all of them the cores' accumulate registers — a single-cycle
-BRAM-read → 8-bit multiply → 32-bit accumulate path implemented in LUT/carry
-logic (0 of 80 DSP48s used). The identified fix (pipeline register between
-multiply and accumulate, +1 cycle latency at unchanged throughput; map
-multiplies to DSP48) has not yet been applied; the design operates correctly
-at the effective ~92 MHz margin in practice. Details: `results/timing_baseline.md`.
+An independent rebuild of the baseline compute architecture misses the
+100 MHz constraint at WNS −0.905 ns, with all 51 failing paths starting at a
+BRAM read port and terminating at core accumulator registers
+(`results/timing_all_violations.rpt`). The implementation used for the
+reported benchmarks technically meets timing at WNS +0.020 ns with zero
+failing endpoints, but its 20 ps setup margin is not robust. Pipelining the
+MAC and validating the added latency remains the architectural fix. Details:
+`results/timing_baseline.md`.
