@@ -9,9 +9,10 @@ path, with the real status-register values from the board.
 Selecting the new DMA benchmark case froze the application before any output.
 A subsequent CHECK was also unresponsive — consistent with the CPU being stuck
 inside the DMA case, not with two independent failures. The original PIO path
-on the same bitstream still worked, which immediately ruled out bitstream-,
-clock/reset-, and address-map-level causes and localized the fault to the DMA
-path itself.
+on the same bitstream still worked, showing that the baseline accelerator and
+original control path were intact and narrowing the investigation to the
+newly added DMA path — while DMA-specific reset, addressing, and interface
+connectivity still remained to be checked.
 
 ## Instrumentation
 
@@ -25,17 +26,19 @@ DMA: enter,  SR=0x00000001    <- Halted (engine not yet started: expected)
 DMA: kicked, SR=0x00000000    <- running... and it stays here forever
 ```
 
+(The status chronology here was transcribed from the live bring-up terminal;
+the raw capture from this diagnostic session was not retained.)
+
 ## Reading the state
 
 `SR=0x00000000` is the interesting value — it rules things *out*:
 
-- If the engine were broken or misaddressed → an **error bit** (DMAIntErr,
-  DMASlvErr, DMADecErr) would set. None did.
-- If it were genuinely transferring → **Idle** would eventually set. It never
-  did.
-- Neither halted, nor idle, nor faulted: the engine is running and believes it
-  has **nothing to transfer**. The one programming input that produces that
-  state is a **length of zero**.
+No internal DMA, slave, or decode error bits were set, so the status register
+did not indicate those fault classes. A completed transfer would eventually
+assert **Idle** (and **IOC**), but neither appeared. This suggested the
+transfer might not have been launched with a nonzero effective length —
+leading to inspection of the programmed length against the configured
+register width.
 
 ## Root cause
 
@@ -69,8 +72,9 @@ DMA: done, SR=0x00001002      <- Idle + IOC: transfer complete
 ```
 
 followed by a bit-exact match against the software golden reference, and load
-time of 42.4 µs — within 3.6% of the 40.96 µs ideal streaming time,
-consistent with near-one-word-per-cycle delivery after fixed setup overhead.
+time of 42.4 µs — within about 3.6% of the 40.96 µs ideal transfer time,
+consistent with near-ideal aggregate throughput including fixed setup
+overhead (beat-level stalls were not instrumented).
 
 ## Secondary lesson: instrumentation cost
 
