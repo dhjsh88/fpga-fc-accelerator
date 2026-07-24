@@ -3,8 +3,8 @@
 - Board: Zybo Z7-10 (XC7Z010), PL @ 100 MHz; Cortex-A9 bare-metal
 - Workload: 4 cores x 4,096 iterations of 8-bit x 8-bit MAC accumulation
   (four packed lanes per 32-bit word; four 32-bit results)
-- Verification: bit-exact match against SW golden reference in every
-  measured configuration
+- Verification: bit-exact match against SW golden reference in all reported
+  hardware runs
 - Raw logs: `serial_logs_baseline.txt`, `serial_logs_dma.txt`
 
 ## 1. Headline: PIO vs DMA (same bitstream, -O2, single session)
@@ -22,7 +22,9 @@ Against SW (-O2, 519.26 us): end-to-end flips from **3.6x slower** to
 **4.1x faster**.
 
 Sanity check: DMA load of 4,096 words at one word/clock = 40.96 us theoretical;
-42.43 us measured -> the stream sustains full rate with no dead cycles.
+42.43 us measured — within 3.6% of the ideal streaming time, consistent with
+near-one-word-per-cycle delivery after fixed setup overhead. (Beat-level
+confirmation would require an ILA or AXI performance monitor; not instrumented.)
 
 ## 2. SW optimization level (fairness control)
 
@@ -38,12 +40,16 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
 
 | | PIO baseline | After DMA |
 |---|---|---|
-| Loading share of end-to-end | 97.5% | 67% |
+| Loading share of end-to-end | 97.5% (original baseline session) / 97.8% (same-bitstream A/B session, table above) | 67% |
 | Bottleneck | 8,192 single-word AXI-Lite transactions (full address/data/response handshake + CPU loop per word) | burst DMA over HP0; remaining floor is 2 x 4,096-beat streams |
 
 ## 4. Measurement notes
 
 - Timing via A9 global timer (`XTime_GetTime`); microsecond values reported.
+- The timed region covers DMA transfer + PL compute + readback. Input
+  generation and the one-time cache flush (`Xil_DCacheFlushRange`) execute
+  before the timed region; the end-to-end figure is accelerator execution time
+  excluding input generation and cache maintenance.
 - Diagnostic printf inside the timed region inflates results by ~30-160x at
   115,200 baud; removed for all reported numbers (see
   `docs/debugging_story.md`).
@@ -59,12 +65,3 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
 - The -O0 row in section 2 (1314.29 us) is from the baseline-bitstream
   session; HW compute is 41.5-41.7 us in every session, confirming PS/PL
   separation.
-
-## 5. Appendix: Power Estimate (Vectorless)
-
-Vivado post-implementation estimate on the DMA-enabled build: 1.56 W total,
-of which the PS7 (ARM subsystem) accounts for 1.404 W (96%). The entire PL
-side — clocks, signals, logic, BRAM — sums to ~37 mW. Vectorless analysis,
-medium confidence; included for completeness, not as a claim.
-
-![Power summary](../docs/images/power_summary.png)
