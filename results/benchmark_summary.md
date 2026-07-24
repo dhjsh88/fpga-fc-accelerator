@@ -18,8 +18,8 @@
 | Result readback | 0.83 us | 0.83 us | unchanged |
 | **End-to-end** | **1888.54 us** | **127.37 us** | **14.8x** |
 
-Against SW (-O2, 519.26 us): end-to-end flips from **3.6x slower** to
-**4.1x faster**.
+Against SW compute (-O2, 519.26 us), within the measured benchmark scope:
+the PIO path is **3.6x slower**, the DMA path **4.1x faster**.
 
 Sanity check: DMA load of 4,096 words at one word/clock = 40.96 us theoretical;
 42.43 us measured — within 3.6% of the ideal streaming time, consistent with
@@ -33,15 +33,20 @@ confirmation would require an ILA or AXI performance monitor; not instrumented.)
 | -O0 | 1314.29 us | 41.6 us | ~31.6x |
 | **-O2 (reported)** | **508-519 us** | 41.5-41.7 us | **~12.2-12.5x** |
 
-HW compute is invariant to compiler flags (PS/PL separation); only the SW
+HW compute remains essentially unchanged across SW compiler settings, as
+expected from PS/PL separation; only the SW
 reference and the CPU-driven loading loop change. All headline claims use -O2.
 
 ## 3. Where the time goes
 
 | | PIO baseline | After DMA |
 |---|---|---|
-| Loading share of end-to-end | 97.5% (original baseline session) / 97.8% (same-bitstream A/B session, table above) | 67% |
-| Bottleneck | 8,192 single-word AXI-Lite transactions (full address/data/response handshake + CPU loop per word) | burst DMA over HP0; remaining floor is 2 x 4,096-beat streams |
+| Loading share of measured run | 97.8% | 66.6% |
+| Bottleneck | 8,192 single-word AXI-Lite transactions (full address/data/response handshake + CPU loop per word) | burst DMA over HP0; remaining floor is 2 x 4,096-beat streams plus fixed setup overhead |
+
+The original pre-DMA baseline session measured a 97.5% loading share
+(`putty_baseline_*.log`); the 97.8% figure above comes from the same-bitstream
+PIO/DMA A/B session in section 1.
 
 ## 4. Measurement notes
 
@@ -50,7 +55,8 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
   generation and the one-time cache flush (`Xil_DCacheFlushRange`) execute
   before the timed region; the end-to-end figure is accelerator execution time
   excluding input generation and cache maintenance.
-- Diagnostic printf inside the timed region inflates results by ~30-160x at
+- Diagnostic printf inside the timed region inflates results by approximately 33x and 166x in the two instrumented
+  transfers at
   115,200 baud; removed for all reported numbers (see
   `docs/debugging_story.md`).
 - Two PIO datasets are included. The original baseline bitstream (pre-DMA)
@@ -59,9 +65,9 @@ reference and the CPU-driven loading loop change. All headline claims use -O2.
   `putty_baseline_O2.log`). The headline table uses the same-bitstream A/B
   session on the DMA-enabled build (923.22/922.83 us,
   `serial_logs_dma.txt`; raw capture `putty_dma_ab.log`), allowing the PIO and
-  DMA paths to be compared under identical hardware. The difference between the
-  two PIO measurements reflects different builds and does not affect the
-  conclusions.
+  DMA paths to be compared under identical hardware. The sessions used different builds, which may account for the difference
+  between the two PIO measurements; the headline comparison avoids the issue
+  by comparing PIO and DMA from the same bitstream and session.
 - The -O0 row in section 2 (1314.29 us) is from the baseline-bitstream
   session; HW compute is 41.5-41.7 us in every session, confirming PS/PL
   separation.
