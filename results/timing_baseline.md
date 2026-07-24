@@ -23,7 +23,7 @@ and reproduced exactly — WNS −0.905 ns, TNS −20.753 ns, 51 failing endpoin
 | TNS | −20.753 ns |
 | Failing endpoints | 51 — all four cores' accumulate registers (`r_result_reg`), confirmed in `timing_all_violations.rpt` |
 | WHS / THS | +0.051 ns / 0.000 ns (hold clean) |
-| DSP48 usage | 0 / 80 (multiplies in LUT + CARRY4, 13 logic levels) |
+| DSP48 usage | 0 / 80 (worst path in LUT + CARRY4, 13 logic levels; violating paths span 9–14 levels) |
 
 ## 2. Diagnosis (my analysis)
 
@@ -41,9 +41,10 @@ the device's DSP48 slices (0 of 80 used).
 Worst path from `timing_summary_baseline.rpt`: `u_bram0/ram_reg_3` (RAMB36E1
 read, 2.454 ns clock-to-out) → multiply/accumulate carry network → core 0
 `r_result_reg[29]/D`. Data-path delay **10.628 ns** against a 10 ns budget;
-**13 logic levels (8x CARRY4, 3x LUT6, 2x LUT4)**. All ten worst paths in the
-report terminate at `r_result_reg` bits across the four core instances, and
-`utilization_baseline.rpt` confirms **DSPs: 0 used / 80 available** — the
+**13 logic levels (8x CARRY4, 3x LUT6, 2x LUT4)**. All ten worst paths terminate at
+`r_result_reg` bits — eight in core 0, two in core 2 — and the full 51-path
+listing confirms the same BRAM-to-accumulator pattern across all four core
+instances. `utilization_baseline.rpt` confirms **DSPs: 0 used / 80 available** — the
 multiplies are absorbed into the LUT/carry fabric, which is exactly why the
 chain does not fit in one cycle.
 
@@ -74,7 +75,8 @@ path, that pass is attributed to place-and-route variance at a borderline
 constraint and deliberately **not** claimed as an improvement.
 
 This is the implementation the benchmarks in this repository ran on, so its
-timing summary is reproducible from the current project:
+timing summary is reproducible from the current project
+(raw report: `timing_summary_benchmark_build.rpt`):
 
 ![Current implementation: WNS +0.020 ns, 0 failing endpoints](../docs/images/timing_marginal_pass.png)
 
