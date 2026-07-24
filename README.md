@@ -4,9 +4,9 @@ A fully connected (FC) layer MAC accelerator deployed on a Xilinx Zynq-7000 (Zyb
 profiled on real hardware, and redesigned around AXI DMA after measurement showed that
 **data loading — not computation — consumed roughly 98% of end-to-end time.**
 
-**Result: loading time reduced 21.8x; end-to-end performance flipped from a 3.6x deficit
-to a 4.1x advantage over optimized software, with bit-exact agreement against a golden
-reference maintained throughout.**
+**Result: loading time reduced 21.8x; within the measured benchmark scope, end-to-end
+performance flipped from a 3.6x deficit to a 4.1x advantage over optimized software,
+with bit-exact agreement against a golden reference in all reported hardware runs.**
 
 ---
 
@@ -23,7 +23,7 @@ This repository contains only my own contributions:
 | AXI-Stream → BRAM receiver module (new RTL) | `rtl/axis_to_bram.v` |
 | PIO/DMA path-select mux + control register design (modifications to course RTL, documented) | `docs/MODIFICATIONS.md` |
 | DMA helper functions: transfer programming, cache-coherency handling, documented integration flow (new C code) | `sw/dma_extension.c` |
-| System integration: AXI DMA IP, Zynq HP0 port, block design, address map | `docs/architecture.md` |
+| System integration: AXI DMA IP, Zynq HP0 port, block-design integration, and interface routing | `docs/architecture.md` |
 | On-board benchmarking, bottleneck profiling, verification | `results/` |
 | Root-cause debugging of a silent DMA failure (length-register truncation) | `docs/debugging_story.md` |
 
@@ -51,7 +51,7 @@ execution time excluding input generation and cache maintenance.
 
 Reference points:
 - SW compute on the A9 (`-O2`): **519.26 µs** → pure-compute speedup of the PL core: ~12.5x (12.2x on the baseline bitstream session)
-- End-to-end vs. SW: baseline **3.6x slower** → after redesign **4.1x faster**
+- Within the measured benchmark scope, vs. SW (-O2): PIO path **3.6x slower** → DMA path **4.1x faster**
 - DMA load time: 4,096 words x 10 ns/clk = 40.96 µs ideal; 42.43 µs measured —
   within 3.6% of the ideal streaming time, consistent with near-one-word-per-cycle
   delivery after fixed setup overhead.
@@ -77,11 +77,13 @@ stream into the accelerator's `s_axis` port:
 Design decisions worth noting:
 
 - **The original PIO path was kept, selectable at runtime via a control register**
-  (`slv_reg10[0]`: 0 = PIO, 1 = DMA; `[1]` selects target BRAM). This enabled
+  (register slot 10 at byte offset 0x28: bit 0 selects PIO/DMA mode, bit 1 the
+  target BRAM). This enabled
   like-for-like A/B measurement on the same bitstream and preserved a known-good
   path for regression during bring-up. It also localized fault isolation: when the
-  DMA path first hung, the working PIO path immediately ruled out bitstream- and
-  address-map-level causes.
+  DMA path first hung, the working PIO path showed the baseline accelerator and original
+  control path were intact, narrowing the investigation to the newly added
+  DMA path.
 - **`axis_to_bram` generates what the stream lacks — addresses.** AXI-Stream carries
   data with valid/ready handshaking but no addressing; the receiver counts accepted
   beats (0,1,2,…) into a BRAM write address and resets on `TLAST`. `tready` is held
@@ -104,11 +106,12 @@ Full trace and reasoning: `docs/debugging_story.md`.
 
 ## Known Limitations / Next Steps
 
-- The baseline compute core does not robustly close timing at 100 MHz: the
-  single-cycle multiply–accumulate path is the bottleneck (WNS −0.905 ns). An
-  implementation-strategy change closes it with zero margin, and the real fix —
-  pipelining the MAC — is identified but deliberately not applied; a lucky
-  marginal pass along the way is documented rather than claimed. Full analysis:
+- The baseline compute core does not robustly close timing at 100 MHz: an
+  independent baseline rebuild reports WNS −0.905 ns, with the single-cycle
+  multiply–accumulate path as the bottleneck. The benchmark implementation
+  technically meets timing at WNS +0.020 ns, but its 20 ps setup margin is not
+  robust. The architectural fix — pipelining the MAC and validating the added
+  latency — has been identified but deliberately not applied. Full analysis:
   `results/timing_baseline.md`.
 - Streaming directly to the cores (removing the BRAM staging entirely) is the
   natural next step; the DMA/cache/benchmark infrastructure built here carries over.
@@ -118,7 +121,7 @@ Full trace and reasoning: `docs/debugging_story.md`.
 | Artifact | Location |
 |---|---|
 | 21.8× loading / 4.1× end-to-end / bit-exact | `results/putty_dma_ab.log` (unedited capture) |
-| Loading share (97.5% baseline session / 97.8% A/B session) | `results/putty_baseline_*.log`, `putty_dma_ab.log` |
+| Loading share (97.5% baseline session / 97.8% A/B session) | `results/putty_baseline_*.log`, `results/putty_dma_ab.log` |
 | Timing analysis | `results/timing_baseline.md` + full Vivado reports |
 | What is mine vs. course-provided | `docs/MODIFICATIONS.md` |
 
