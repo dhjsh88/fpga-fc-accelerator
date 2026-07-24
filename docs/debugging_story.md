@@ -69,8 +69,8 @@ DMA: done, SR=0x00001002      <- Idle + IOC: transfer complete
 ```
 
 followed by a bit-exact match against the software golden reference, and load
-time of 42.4 µs — consistent with theory (4,096 words x 10 ns/clk ≈ 41 µs,
-i.e., one word per clock with no dead cycles).
+time of 42.4 µs — within 3.6% of the 40.96 µs ideal streaming time,
+consistent with near-one-word-per-cycle delivery after fixed setup overhead.
 
 ## Secondary lesson: instrumentation cost
 
