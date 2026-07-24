@@ -20,7 +20,7 @@ and reproduced exactly — WNS −0.905 ns, TNS −20.753 ns, 51 failing endpoin
 | Target clock | 100 MHz (10 ns, clk_fpga_0) |
 | WNS | **−0.905 ns** (setup, failing) |
 | TNS | −20.753 ns |
-| Failing endpoints | 51 — all four cores' accumulate registers (`r_result_reg`) |
+| Failing endpoints | 51 (summary count) — the ten worst reported paths all terminate at core accumulate registers (`r_result_reg`) |
 | WHS / THS | +0.051 ns / 0.000 ns (hold clean) |
 | DSP48 usage | 0 / 80 (multiplies in LUT + CARRY4, 13 logic levels) |
 
@@ -28,9 +28,11 @@ and reproduced exactly — WNS −0.905 ns, TNS −20.753 ns, 51 failing endpoin
 
 Worst path: BRAM data output → 8-bit multiply → 32-bit accumulate →
 `r_result` register — the entire chain in one clock cycle (~10.6 ns against
-~9.7 ns available). All 51 failing endpoints share this single root cause;
-this is not scattered congestion but one architectural decision (single-cycle
-MAC) exceeding the clock budget, aggravated by the multiplies being inferred
+~9.7 ns available). Every path in the worst-ten report shares this single root cause — the summary
+counts 51 failing endpoints in total, and a full violation listing
+(`report_timing -setup -slack_lesser_than 0`) is queued to confirm the
+remainder. This is not scattered congestion but one architectural decision
+(single-cycle MAC) exceeding the clock budget, aggravated by the multiplies being inferred
 into LUT/carry logic instead of the device's DSP48 slices (0 of 80 used).
 
 Worst path from `timing_summary_baseline.rpt`: `u_bram0/ram_reg_3` (RAMB36E1
@@ -68,9 +70,10 @@ timing summary is reproducible from the current project:
 
 ![Current implementation: WNS +0.020 ns, 0 failing endpoints](../docs/images/timing_marginal_pass.png)
 
-+0.020 ns of slack on a 10 ns clock is 0.2% margin and reflects
-place-and-route variability at a borderline constraint — not closure. The
-architectural fix in section 3 remains the real answer.
+The run technically meets timing, but +0.020 ns on a 10 ns clock is 0.2%
+margin, reflecting place-and-route variability at a borderline constraint —
+too little to regard the design as robustly closed. The architectural fix in
+section 3 remains the real answer.
 
 ## 4.5 Tool-level closure (deliberate, reproducible)
 
@@ -90,8 +93,10 @@ meets timing; only the pipeline fix in section 3 would create margin.
 
 ## 5. Practical note
 
-Functionally, all benchmarks in this repository pass bit-exact verification on
-the board — the violated path has ~0.9 ns of negative slack against worst-case
-corner models, and the silicon at room temperature meets it in practice. That
-is not a substitute for closure; it is why the limitation is documented rather
-than hidden.
+The violating build was never programmed onto the board: with 51 failing
+endpoints there was no reason to trust its behavior, and no bitstream from it
+was used for any measurement in this repository. Every benchmark here ran on
+the marginal-pass build of section 4, where static timing analysis reports
+zero failing endpoints — which is why the bit-exact results are meaningful
+rather than lucky. The limitation is documented because the architecture has
+not been fixed, not because the numbers depend on ignoring it.
