@@ -2,7 +2,7 @@
 
 A fully connected (FC) layer MAC accelerator deployed on a Xilinx Zynq-7000 (Zybo Z7-10),
 profiled on real hardware, and redesigned around AXI DMA after measurement showed that
-**data loading — not computation — consumed 97.5% of end-to-end time.**
+**data loading — not computation — consumed roughly 98% of end-to-end time.**
 
 **Result: loading time reduced 21.8x; end-to-end performance flipped from a 3.6x deficit
 to a 4.1x advantage over optimized software, with bit-exact agreement against a golden
@@ -22,7 +22,7 @@ This repository contains only my own contributions:
 |---|---|
 | AXI-Stream → BRAM receiver module (new RTL) | `rtl/axis_to_bram.v` |
 | PIO/DMA path-select mux + control register design (modifications to course RTL, documented) | `docs/MODIFICATIONS.md` |
-| DMA driver: burst transfer, cache-coherency handling, benchmark integration (new C code) | `sw/dma_extension.c` |
+| DMA helper functions: transfer programming, cache-coherency handling, documented integration flow (new C code) | `sw/dma_extension.c` |
 | System integration: AXI DMA IP, Zynq HP0 port, block design, address map | `docs/architecture.md` |
 | On-board benchmarking, bottleneck profiling, verification | `results/` |
 | Root-cause debugging of a silent DMA failure (length-register truncation) | `docs/debugging_story.md` |
@@ -45,13 +45,18 @@ Measured on hardware (PL @ 100 MHz, Cortex-A9 bare-metal, SW compiled `-O2`):
 | Result readback | 0.83 µs | 0.83 µs |
 | **End-to-end** | **1,888.54 µs** | **127.37 µs** |
 
+Timed region: transfer + compute + readback. Input generation and the one-time
+cache flush run before the timed region, so "end-to-end" here means accelerator
+execution time excluding input generation and cache maintenance.
+
 Reference points:
 - SW compute on the A9 (`-O2`): **519.26 µs** → pure-compute speedup of the PL core: ~12.5x (12.2x on the baseline bitstream session)
 - End-to-end vs. SW: baseline **3.6x slower** → after redesign **4.1x faster**
-- DMA load time matches theory: 4,096 words x 10 ns/clk ≈ 41 µs (measured 42.43 µs),
-  i.e., the stream sustains one word per clock with no dead cycles.
-- Verification: SW golden reference vs. hardware results — **bit-exact match** in every
-  configuration (menu-driven CHECK over all 4 accumulators).
+- DMA load time: 4,096 words x 10 ns/clk = 40.96 µs ideal; 42.43 µs measured —
+  within 3.6% of the ideal streaming time, consistent with near-one-word-per-cycle
+  delivery after fixed setup overhead.
+- Verification: SW golden reference vs. hardware results — **bit-exact match** in all
+  reported hardware runs (menu-driven CHECK over all 4 accumulators).
 
 Raw serial logs from the board are in `results/`.
 
@@ -60,7 +65,7 @@ Raw serial logs from the board are in `results/`.
 ````
 Before (PIO):   DDR ──CPU, 8,192 single AXI-Lite writes──▶ BRAM ──▶ 4x MAC cores
 After  (DMA):   DDR ──AXI DMA burst via Zynq HP0──▶ AXI-Stream ──▶ axis_to_bram ──▶ BRAM ──▶ 4x MAC cores
-                       (CPU issues one descriptor per array; cache flushed before transfer)
+                       (CPU programs one MM2S transfer per array; cache flushed before transfer)
 ````
 
 The implemented block design — control on GP0 (left interconnect), bulk data
@@ -113,7 +118,7 @@ Full trace and reasoning: `docs/debugging_story.md`.
 | Artifact | Location |
 |---|---|
 | 21.8× loading / 4.1× end-to-end / bit-exact | `results/putty_dma_ab.log` (unedited capture) |
-| 97.5% loading share | `results/putty_baseline_O0.log`, `_O2.log` |
+| Loading share (97.5% baseline session / 97.8% A/B session) | `results/putty_baseline_*.log`, `putty_dma_ab.log` |
 | Timing analysis | `results/timing_baseline.md` + full Vivado reports |
 | What is mine vs. course-provided | `docs/MODIFICATIONS.md` |
 
@@ -126,3 +131,6 @@ SW optimization level recorded per measurement (`-O0` and `-O2` both reported in
 Implemented design on the XC7Z010 fabric (accelerator + DMA in cyan):
 
 ![Implemented device](docs/images/implemented_device.png)
+
+
+커밋되면 repo는 이걸로 최종 동결이고, 바로 구글 메시지 발송 → 김현덕·사수 메일 순서야. 완료 알려줘.
