@@ -100,13 +100,3 @@ of the 10 ns budget), so the gain came from placement and routing. Both runs
 landing just above zero slack is expected tool behavior — the router stops
 optimizing once timing is met — not evidence of a shared cause. A strategy
 meets timing; only the pipeline fix in section 3 would create margin.
-
-## 5. Practical note
-
-The violating build was never programmed onto the board: with 51 failing
-endpoints there was no reason to trust its behavior, and no bitstream from it
-was used for any measurement in this repository. Every benchmark here ran on
-the marginal-pass build of section 4, where static timing analysis reports
-zero failing endpoints — which is why the bit-exact results are meaningful
-rather than lucky. The limitation is documented because the architecture has
-not been fixed, not because the numbers depend on ignoring it.
