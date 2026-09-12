@@ -2,7 +2,7 @@
 
 A fully connected (FC) layer MAC accelerator deployed on a Xilinx Zynq-7000 (Zybo Z7-10),
 profiled on real hardware, and redesigned around AXI DMA after measurement showed that
-**data loading — not computation — consumed roughly 98% of end-to-end time.**
+**data loading consumed roughly 98% of end-to-end time.**
 
 **Result: loading time reduced 21.8x; within the measured benchmark scope, end-to-end
 performance flipped from a 3.6x deficit to a 4.1x advantage over optimized software,
