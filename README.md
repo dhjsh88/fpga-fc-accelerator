@@ -58,45 +58,38 @@ Implementation details:
 - AXI-Stream provides data and valid/ready handshaking but does not provide a memory address. The `axis_to_bram` module increments the BRAM write address for each accepted word. It resets the address counter when it accepts `TLAST`. The receiver keeps `tready` high because BRAM can accept one write per clock. No additional backpressure logic is required in this design.
 - The processor flushes both operand buffers with (`Xil_DCacheFlushRange`) after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
 
-## The Bug That Taught the Most
+## DMA Transfer Length Issue
 
-The first DMA bring-up hung with **no error flags**: status register `0x00000000` —
-not halted, not idle, no DMA/slave/decode error. Instrumenting the transfer with
-status-register polling and a timeout narrowed it to "the engine believes it has
-nothing to do." The transfer size, 16,384 bytes, exceeds the **default 14-bit buffer
-length register (max 16,383 bytes) by exactly one byte**, truncating the programmed
-length to zero. Widening the length register to 23 bits resolved it; the next run
-returned `SR = 0x1002` (Idle + IOC) and passed bit-exact verification.
+The first DMA transfer did not complete. I added a timeout and polled the DMA status register. It remained at `0x00000000`. The channel was neither halted nor idle, and no DMA, slave, or decode error bit was set. I then checked the DMA configuration. The requested transfer was 16,384 bytes, but the default 14-bit buffer-length field could represent no more than 16,383 bytes. As a result, the programmed length was truncated to zero.
+I increased the buffer-length width from 14 to 23 bits and regenerated the design. The next transfer completed with SR = 0x1002, indicating Idle and IOC. The existing output check also passed.
 
-Full trace and reasoning: `docs/debugging_story.md`.
+The debugging steps are documented in `docs/debugging_story.md`.
 
-## Known Limitations / Next Steps
 
-- The baseline compute core does not robustly close timing at 100 MHz: an
-  independent baseline rebuild reports WNS −0.905 ns, with the single-cycle
-  multiply–accumulate path as the bottleneck. The benchmark implementation
-  technically meets timing at WNS +0.020 ns, but its 20 ps setup margin is not
-  robust. The architectural fix — pipelining the MAC and validating the added
-  latency — has been identified but deliberately not applied. Full analysis:
-  `results/timing_baseline.md`.
-- Streaming directly to the cores (removing the BRAM staging entirely) is the
-  natural next step; the DMA/cache/benchmark infrastructure built here carries over.
+## Limitaitions and Possible Extentions
 
-## Key Project Artifacts
+The DMA extension changes the loading path but does not change the compute path. An independent rebuild of the baseline reported a WNS of −0.905 ns at 100 MHz. The single-cycle MAC path was the limiting path. The build used for the benchmark met timing with a WNS of +0.020 ns, but the remaining margin was only 20 ps.
+I did not modify the compute path in this project. Pipelining the MAC is one possible extension, although the added latency would also need to be verified. The timing reports are available in `results/timing_baseline.md`.
+Another possible extension is to stream operands directly to the MAC cores instead of staging them in BRAM. The existing DMA, cache-handling, and benchmark code could be reused for this change.
 
-| Artifact | Location |
+## Supporting Files
+
+| Contents | Location |
 |---|---|
-| 21.8× loading / 4.1× end-to-end / bit-exact | `results/putty_dma_ab.log` (unedited capture) |
-| Loading share (97.5% baseline session / 97.8% A/B session) | `results/putty_baseline_*.log`, `results/putty_dma_ab.log` |
-| Timing analysis | `results/timing_baseline.md` + full Vivado reports |
-| What is mine vs. course-provided | `docs/MODIFICATIONS.md` |
+| PIO/DMA timing and output-check log | `results/putty_dma_ab.log` |
+| PIO loading measurements from the baseline and A/B sessions | `results/putty_baseline_*.log`, `results/putty_dma_ab.log` |
+| Timing analysis and Vivado reports | `results/timing_baseline.md` and Vivado reports |
+| RTL and software modifications | `docs/MODIFICATIONS.md` |
 
 ## Environment
 
-Zybo Z7-10 (XC7Z010) · Vivado/Vitis 2022.2 · PL @ 100 MHz · Cortex-A9 bare-metal ·
-SW optimization level recorded per measurement (`-O0` and `-O2` both reported in
-`results/benchmark_summary.md`).
+-Board: Zybo Z7-10  
+-Device: XC7Z010  
+-Tools: Vivado and Vitis 2022.2  
+-Processor: Cortex-A9, bare-metal  
+-PL clock: 100 MHz  
+-Software builds: -O0 and -O2; the performance comparisons above use -O2
 
-Implemented design on the XC7Z010 fabric (accelerator + DMA in cyan):
+The image below shows the implemented design on the XC7Z010. The accelerator and AXI DMA are highlighted in cyan.:
 
 ![Implemented device](docs/images/implemented_device.png)
