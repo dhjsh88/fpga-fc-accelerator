@@ -1,4 +1,4 @@
-# FPGA FC-Layer Accelerator on Zynq: Diagnosing and Removing a Data-Movement Bottleneck
+# FPGA FC-Layer Accelerator with AXI DMA on Zynq
 
 This repository documents my implementation of an FC-layer accelerator on a Zynq-7000 SoC. I first profiled the PIO-based system on a Zybo Z7-10. Operand loading accounted for about 98 percent of the time measured for data loading, accelerator computation, and result readback.
 
@@ -6,7 +6,7 @@ I then added an AXI DMA loading path and an AXI-Stream-to-BRAM receiver. I kept 
 
 Within the measured benchmark, the DMA-based accelerator ran 4.1 times faster than the -O2 Cortex-A9 software reference. The existing CHECK routine reported bit-exact agreement for all four output accumulators.
 
-Project Contributions
+## Project Contributions
 ---
 | Contribution | Location |
 |---|---|
@@ -23,7 +23,7 @@ Project Contributions
 
 The PIO path loads two 4,096-word operand arrays into on-chip BRAM. The processor sends each word through AXI4-Lite, resulting in 8,192 individual writes. Each write requires address, data, and response handshakes. The processor remains involved throughout the loading process.
 
-The measurements below were collected on the Zybo Z7-10. The PL clock was 100 MHz. The Cortex-A9 ran bare-metal software compiled with -O2. The PIO and DMA paths were measured on the same DMA-enabled bitstream.:
+The measurements below were collected on the Zybo Z7-10. The PL clock was 100 MHz. The Cortex-A9 ran bare-metal software compiled with -O2. The PIO and DMA paths were measured on the same DMA-enabled bitstream.
 
 | Stage | PIO path | DMA path |
 |---|---|---|
@@ -32,6 +32,8 @@ The measurements below were collected on the Zybo Z7-10. The PL clock was 100 MH
 | Core compute | 41.67 µs | 41.69 µs |
 | Result readback | 0.83 µs | 0.83 µs |
 | **End-to-end** | **1,888.54 µs** | **127.37 µs** |
+
+The timed region includes operand loading, PL computation, and result readback. It excludes input generation and the cache flush performed before DMA. In this README, the measured interval refers to these three stages rather than the runtime of the entire application.
 
 Key Comparisons:
 - The -O2 software reference took 519.26 µs. The PL compute stage was about 12.5 times faster.
@@ -52,24 +54,27 @@ Control transactions remain on GP0. Bulk data moves from DDR through `S_AXI_HP0`
 
 ![Block design](docs/images/block_design.png)
 
-Implementation details:
+## Implementation details:
 
 - I kept the PIO path and added a control register to select PIO or DMA at runtime. Register slot 10 at byte offset `0x28` contains the control fields. Bit 0 selects the loading path, and bit 1 selects the target BRAM. Keeping both paths allowed them to be measured on the same bitstream. The PIO path also provided a working reference during DMA integration.
 - AXI-Stream provides data and valid/ready handshaking but does not provide a memory address. The `axis_to_bram` module increments the BRAM write address for each accepted word. It resets the address counter when it accepts `TLAST`. The receiver keeps `tready` high because BRAM can accept one write per clock. No additional backpressure logic is required in this design.
-- The processor flushes both operand buffers with (`Xil_DCacheFlushRange`) after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
+- The processor flushes both operand buffers with `Xil_DCacheFlushRange` after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
 
 ## DMA Transfer Length Issue
 
 The first DMA transfer did not complete. I added a timeout and polled the DMA status register. It remained at `0x00000000`. The channel was neither halted nor idle, and no DMA, slave, or decode error bit was set. I then checked the DMA configuration. The requested transfer was 16,384 bytes, but the default 14-bit buffer-length field could represent no more than 16,383 bytes. As a result, the programmed length was truncated to zero.
-I increased the buffer-length width from 14 to 23 bits and regenerated the design. The next transfer completed with SR = 0x1002, indicating Idle and IOC. The existing output check also passed.
+
+I increased the buffer-length width from 14 to 23 bits and regenerated the design. The next transfer completed with `SR = 0x1002`, indicating Idle and IOC. The existing output check also passed.
 
 The debugging steps are documented in `docs/debugging_story.md`.
 
 
-## Limitaitions and Possible Extentions
+## Limitations and Possible Extensions
 
 The DMA extension changes the loading path but does not change the compute path. An independent rebuild of the baseline reported a WNS of −0.905 ns at 100 MHz. The single-cycle MAC path was the limiting path. The build used for the benchmark met timing with a WNS of +0.020 ns, but the remaining margin was only 20 ps.
+
 I did not modify the compute path in this project. Pipelining the MAC is one possible extension, although the added latency would also need to be verified. The timing reports are available in `results/timing_baseline.md`.
+
 Another possible extension is to stream operands directly to the MAC cores instead of staging them in BRAM. The existing DMA, cache-handling, and benchmark code could be reused for this change.
 
 ## Supporting Files
@@ -78,7 +83,8 @@ Another possible extension is to stream operands directly to the MAC cores inste
 |---|---|
 | PIO/DMA timing and output-check log | `results/putty_dma_ab.log` |
 | PIO loading measurements from the baseline and A/B sessions | `results/putty_baseline_*.log`, `results/putty_dma_ab.log` |
-| Timing analysis and Vivado reports | `results/timing_baseline.md` and Vivado reports |
+| Benchmark settings and measurement notes | `results/benchmark_summary.md` |
+| Timing analysis | `results/timing_baseline.md` |
 | RTL and software modifications | `docs/MODIFICATIONS.md` |
 
 ## Environment
@@ -88,8 +94,9 @@ Another possible extension is to stream operands directly to the MAC cores inste
 - Tools: Vivado and Vitis 2022.2  
 - Processor: Cortex-A9, bare-metal  
 - PL clock: 100 MHz  
--Software builds: -O0 and -O2; the performance comparisons above use -O2
+- Software builds: -O0 and -O2
+- Software reference used above: -O2
 
-The image below shows the implemented design on the XC7Z010. The accelerator and AXI DMA are highlighted in cyan.:
+The image below shows the implemented design on the XC7Z010. The accelerator and AXI DMA are highlighted in cyan.
 
 ![Implemented device](docs/images/implemented_device.png)
