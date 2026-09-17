@@ -48,7 +48,7 @@ PIO path: DDR -> CPU-driven AXI4-Lite writes -> BRAM -> four MAC cores
 DMA path: DDR -> AXI DMA through HP0 -> AXI-Stream -> axis_to_bram -> BRAM -> four MAC cores
 ````
 
-Control transactions remain on GP0. Bulk data moves from DDR through 'S_AXI_HP0' and AXI DMA. The DMA's 'M_AXIS_MM2S' output connects to the accelerator's 's_axis' input. The processor programs one MM2S transfer for each operand array.
+Control transactions remain on GP0. Bulk data moves from DDR through `S_AXI_HP0` and AXI DMA. The DMA's `M_AXIS_MM2S` output connects to the accelerator's `s_axis` input. The processor programs one MM2S transfer for each operand array.
 
 ![Block design](docs/images/block_design.png)
 
