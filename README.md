@@ -52,23 +52,11 @@ Control transactions remain on GP0. Bulk data moves from DDR through `S_AXI_HP0`
 
 ![Block design](docs/images/block_design.png)
 
-Design decisions worth noting:
+Implementation details:
 
-- **The original PIO path was kept, selectable at runtime via a control register**
-  (register slot 10 at byte offset 0x28: bit 0 selects PIO/DMA mode, bit 1 the
-  target BRAM). This enabled
-  like-for-like A/B measurement on the same bitstream and preserved a known-good
-  path for regression during bring-up. It also localized fault isolation: when the
-  DMA path first hung, the working PIO path showed the baseline accelerator and original
-  control path were intact, narrowing the investigation to the newly added
-  DMA path.
-- **`axis_to_bram` generates what the stream lacks — addresses.** AXI-Stream carries
-  data with valid/ready handshaking but no addressing; the receiver counts accepted
-  beats (0,1,2,…) into a BRAM write address and resets on `TLAST`. `tready` is held
-  high since BRAM accepts one write per cycle, so no backpressure logic is needed.
-- **Cache coherency handled explicitly**: operand buffers are flushed
-  (`Xil_DCacheFlushRange`) after generation so the DMA — which reads DDR, not the
-  CPU cache — sees current data.
+- I kept the PIO path and added a control register to select PIO or DMA at runtime. Register slot 10 at byte offset `0x28` contains the control fields. Bit 0 selects the loading path, and bit 1 selects the target BRAM. Keeping both paths allowed them to be measured on the same bitstream. The PIO path also provided a working reference during DMA integration.
+- AXI-Stream provides data and valid/ready handshaking but does not provide a memory address. The `axis_to_bram` module increments the BRAM write address for each accepted word. It resets the address counter when it accepts `TLAST`. The receiver keeps `tready` high because BRAM can accept one write per clock. No additional backpressure logic is required in this design.
+-The processor flushes both operand buffers with (`Xil_DCacheFlushRange`) after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
 
 ## The Bug That Taught the Most
 
