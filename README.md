@@ -41,17 +41,14 @@ Key Comparisons:
 
 The board logs for these measurements are available in `results/`.
 
-## What Changed
+## DMA Data Path
 
 ````
-Before (PIO):   DDR ──CPU, 8,192 single AXI-Lite writes──▶ BRAM ──▶ 4x MAC cores
-After  (DMA):   DDR ──AXI DMA burst via Zynq HP0──▶ AXI-Stream ──▶ axis_to_bram ──▶ BRAM ──▶ 4x MAC cores
-                       (CPU programs one MM2S transfer per array; cache flushed before transfer)
+PIO path: DDR -> CPU-driven AXI4-Lite writes -> BRAM -> four MAC cores
+DMA path: DDR -> AXI DMA through HP0 -> AXI-Stream -> axis_to_bram -> BRAM -> four MAC cores
 ````
 
-The implemented block design — control on GP0 (left interconnect), bulk data
-from DDR through `S_AXI_HP0` (right interconnect), and the DMA's `M_AXIS_MM2S`
-stream into the accelerator's `s_axis` port:
+Control transactions remain on GP0. Bulk data moves from DDR through 'S_AXI_HP0' and AXI DMA. The DMA's 'M_AXIS_MM2S' output connects to the accelerator's 's_axis' input. The processor programs one MM2S transfer for each operand array.
 
 ![Block design](docs/images/block_design.png)
 
