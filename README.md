@@ -56,7 +56,7 @@ Implementation details:
 
 - I kept the PIO path and added a control register to select PIO or DMA at runtime. Register slot 10 at byte offset `0x28` contains the control fields. Bit 0 selects the loading path, and bit 1 selects the target BRAM. Keeping both paths allowed them to be measured on the same bitstream. The PIO path also provided a working reference during DMA integration.
 - AXI-Stream provides data and valid/ready handshaking but does not provide a memory address. The `axis_to_bram` module increments the BRAM write address for each accepted word. It resets the address counter when it accepts `TLAST`. The receiver keeps `tready` high because BRAM can accept one write per clock. No additional backpressure logic is required in this design.
--The processor flushes both operand buffers with (`Xil_DCacheFlushRange`) after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
+- The processor flushes both operand buffers with (`Xil_DCacheFlushRange`) after generating the inputs. This occurs before DMA begins because DMA reads DDR rather than the Cortex-A9 data cache.
 
 ## The Bug That Taught the Most
 
