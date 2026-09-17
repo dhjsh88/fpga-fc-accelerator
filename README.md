@@ -8,7 +8,7 @@ Within the measured benchmark, the DMA-based accelerator ran 4.1 times faster th
 
 Project Contributions
 ---
-| Contribution | Where |
+| Contribution | Location |
 |---|---|
 | AXI-Stream → BRAM receiver | `rtl/axis_to_bram.v` |
 | Runtime selectable PIO/DMA path and control fields | `docs/MODIFICATIONS.md` |
@@ -19,36 +19,27 @@ Project Contributions
 
 ---
 
-## The Problem, Measured
+## Performance Measurements
 
-The baseline loads two 4,096-word operand arrays into on-chip BRAM through AXI4-Lite
-programmed I/O — 8,192 single-word transfers, each carrying full address/data/response
-handshake overhead and CPU involvement.
+The PIO path loads two 4,096-word operand arrays into on-chip BRAM. The processor sends each word through AXI4-Lite, resulting in 8,192 individual writes. Each write requires address, data, and response handshakes. The processor remains involved throughout the loading process.
 
-Measured on hardware (PL @ 100 MHz, Cortex-A9 bare-metal, SW compiled `-O2`):
+The measurements below were collected on the Zybo Z7-10. The PL clock was 100 MHz. The Cortex-A9 ran bare-metal software compiled with -O2. The PIO and DMA paths were measured on the same DMA-enabled bitstream.:
 
-| Stage | PIO baseline | After DMA redesign |
+| Stage | PIO path | DMA path |
 |---|---|---|
-| BRAM0 load (node) | 923.22 µs | **42.43 µs** |
-| BRAM1 load (weight) | 922.83 µs | **42.42 µs** |
-| Core compute (4-core MAC, 4,096 iter) | 41.67 µs | 41.69 µs |
+| BRAM0 load | 923.22 µs | **42.43 µs** |
+| BRAM1 load | 922.83 µs | **42.42 µs** |
+| Core compute | 41.67 µs | 41.69 µs |
 | Result readback | 0.83 µs | 0.83 µs |
 | **End-to-end** | **1,888.54 µs** | **127.37 µs** |
 
-Timed region: transfer + compute + readback. Input generation and the one-time
-cache flush run before the timed region, so "end-to-end" here means accelerator
-execution time excluding input generation and cache maintenance.
+Key Comparisons:
+- The -O2 software reference took 519.26 µs. The PL compute stage was about 12.5 times faster.
+- The PIO path took 3.6 times as long as the software reference. The DMA path was 4.1 times faster than the reference.
+- A 4,096-word DMA load took 42.43 µs. The ideal transfer time at 100 MHz was 40.96 µs. The measured time was 3.6 percent higher than the ideal value.
+- In the captured runs, the existing CHECK routine reported bit-exact agreement for all four output accumulators.
 
-Reference points:
-- SW compute on the A9 (`-O2`): **519.26 µs** → pure-compute speedup of the PL core: ~12.5x (12.2x on the baseline bitstream session)
-- Within the measured benchmark scope, vs. SW (-O2): PIO path **3.6x slower** → DMA path **4.1x faster**
-- DMA load time: 4,096 words x 10 ns/clk = 40.96 µs ideal; 42.43 µs measured —
-  within 3.6% of the ideal streaming time, consistent with near-one-word-per-cycle
-  delivery after fixed setup overhead.
-- Verification: SW golden reference vs. hardware results — **bit-exact match** in all
-  reported hardware runs (menu-driven CHECK over all 4 accumulators).
-
-Raw serial logs from the board are in `results/`.
+The board logs for these measurements are available in `results/`.
 
 ## What Changed
 
