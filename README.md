@@ -1,23 +1,20 @@
 # FPGA FC-Layer Accelerator on Zynq: Diagnosing and Removing a Data-Movement Bottleneck
 
-A fully connected (FC) layer MAC accelerator deployed on a Xilinx Zynq-7000 (Zybo Z7-10),
-profiled on real hardware, and redesigned around AXI DMA after measurement showed that
-**data loading consumed roughly 98% of end-to-end time.**
+This repository documents my implementation of an FC-layer accelerator on a Zynq-7000 SoC. I first profiled the PIO-based system on a Zybo Z7-10. Operand loading accounted for about 98 percent of the time measured for data loading, accelerator computation, and result readback.
 
-**Result: loading time reduced 21.8x; within the measured benchmark scope, end-to-end
-performance flipped from a 3.6x deficit to a 4.1x advantage over optimized software,
-with bit-exact agreement against a golden reference in all reported hardware runs.**
+I then added an AXI DMA loading path and an AXI-Stream-to-BRAM receiver. I kept the original PIO path for comparison. In a same-bitstream benchmark, the DMA path made operand loading 21.8 times faster.
 
+Within the measured benchmark, the DMA-based accelerator ran 4.1 times faster than the -O2 Cortex-A9 software reference. The existing CHECK routine reported bit-exact agreement for all four output accumulators.
 ---
-
+Project Contributions
 | Contribution | Where |
 |---|---|
-| AXI-Stream → BRAM receiver module | `rtl/axis_to_bram.v` |
-| PIO/DMA path-select mux + control register design (modifications to course RTL, documented) | `docs/MODIFICATIONS.md` |
-| DMA helper functions: transfer programming, cache-coherency handling, documented integration flow | `sw/dma_extension.c` |
-| System integration: AXI DMA IP, Zynq HP0 port, block-design integration, and interface routing | `docs/architecture.md` |
-| On-board benchmarking, bottleneck profiling, verification | `results/` |
-| Root-cause debugging of a silent DMA failure (length-register truncation) | `docs/debugging_story.md` |
+| AXI-Stream → BRAM receiver | `rtl/axis_to_bram.v` |
+| Runtime selectable PIO/DMA path and control fields | `docs/MODIFICATIONS.md` |
+| DMA transfer control, cache handling, and status polling | `sw/dma_extension.c` |
+| AXI DMA and Zynq HP0 integration | `docs/architecture.md` |
+| On-board profiling, PIO/DMA measurements, and output checks | `results/` |
+| DMA transfer length debugging | `docs/debugging_story.md` |
 
 ---
 
