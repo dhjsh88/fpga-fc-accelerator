@@ -83,11 +83,11 @@ Another possible extension is to stream operands directly to the MAC cores inste
 
 ## Environment
 
--Board: Zybo Z7-10  
--Device: XC7Z010  
--Tools: Vivado and Vitis 2022.2  
--Processor: Cortex-A9, bare-metal  
--PL clock: 100 MHz  
+- Board: Zybo Z7-10  
+- Device: XC7Z010  
+- Tools: Vivado and Vitis 2022.2  
+- Processor: Cortex-A9, bare-metal  
+- PL clock: 100 MHz  
 -Software builds: -O0 and -O2; the performance comparisons above use -O2
 
 The image below shows the implemented design on the XC7Z010. The accelerator and AXI DMA are highlighted in cyan.:
