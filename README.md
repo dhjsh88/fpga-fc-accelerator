@@ -5,6 +5,7 @@ This repository documents my implementation of an FC-layer accelerator on a Zynq
 I then added an AXI DMA loading path and an AXI-Stream-to-BRAM receiver. I kept the original PIO path for comparison. In a same-bitstream benchmark, the DMA path made operand loading 21.8 times faster.
 
 Within the measured benchmark, the DMA-based accelerator ran 4.1 times faster than the -O2 Cortex-A9 software reference. The existing CHECK routine reported bit-exact agreement for all four output accumulators.
+
 Project Contributions
 ---
 | Contribution | Where |
